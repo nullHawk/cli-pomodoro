@@ -3,6 +3,7 @@ import threading
 
 class Timer:
     def __init__(self,duration):
+        self.original_duration = duration
         self.duration = duration
         self.thread = None
         self.running = False
@@ -11,6 +12,11 @@ class Timer:
         self.running = True
         self.thread = threading.Thread(target=self._countdown)
         self.thread.start()
+    
+    def reset(self):
+        self.running = False
+        self.stop()
+        self.duration = self.original_duration
     
     def _countdown(self):
         while self.duration and self.running:
