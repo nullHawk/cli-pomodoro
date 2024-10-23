@@ -2,34 +2,44 @@ import time
 import threading
 
 class Timer:
-    def __init__(self,duration):
-        self.original_duration = duration
-        self.duration = duration
-        self.thread = None
-        self.running = False
-    
-    def run(self):
-        self.running = True
-        self.thread = threading.Thread(target=self._countdown)
-        self.thread.start()
+    def __init__(self,end_duration, on_complete=None):
+        self.__end_duration = end_duration
+        self.__cur_duration = 0
+        self.__running = False
+        self.__paused = False
+        self.__timer_thread = None
+        self.on_complete = on_complete
+
+    def start(self):
+        if not self.running:
+            self.__running = True
+            self.__timer_thread = threading.Thread(target=self.__countdown)
+            self.__timer_thread.start()
+
+    def pause(self):
+        if self.running:
+            self.__paused = True
     
     def reset(self):
-        self.running = False
-        self.stop()
-        self.duration = self.original_duration
-    
-    def _countdown(self):
-        while self.duration and self.running:
-            mins, secs = divmod(self.duration, 60)
-            time_formate = f'{mins:02d}:{secs:02d}'
-            self.callback(time_formate)
-            time.sleep(1)
-            self.duration -= 1
+        self.__running = False
+        self.__paused = False
+        self.__cur_duration = 0
         
-        if self.running:
-            self.callback("Time's up!")
+        if self.__timer_thread and self.__timer_thread.is_alive():
+            self.__timer_thread.join()
+
+    def resume(self):
+        if self.__running and self.__paused:
+            self.__paused = False
+
     
-    def stop(self):
-        self.running = False
-        if self.thread is not None:
-            self.thread.join()
+    def __countdown(self):
+        while self.__running and self.__cur_duration < self.__end_duration:
+            if not self.__paused:
+                self.__cur_duration +=1 
+                time.sleep(1)
+        if self.__cur_duration >= self.__end_duration:
+                self.__running = False
+                if self.on_complete:
+                    self.on_complete()  
+ 
